@@ -1,7 +1,7 @@
 import pytest
 
-def restar(a: int, b: int) -> int:
-    return a - b
+from app.validator import restar
+
 
 def test_division_exitosa_enteros():
     assert restar(10, 3) == 7

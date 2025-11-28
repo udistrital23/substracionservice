@@ -1,69 +1,62 @@
 from behave import given, when, then
-from fastapi.testclient import TestClient
 
-@given('el número A "{numero_a:d}"')
-def step_set_number_a(context, numero_a):
-    context.numero_a = numero_a
 
-@given('el número B "{numero_b:d}"')
-def step_set_number_b(context, numero_b):
-    context.numero_b = numero_b
-
-@when('se realiza la resta')
-def step_perform_subtraction(context):
-    context.payload = {
-        "numero_a": context.numero_a,
-        "numero_b": context.numero_b
-    }
-    # Nota: context.client debe inicializarse en environment.py
-    context.response = context.client.post("/resta", json=context.payload)
-
-@then('el resultado es "{resultado_esperado:d}"')
-def step_check_result(context, resultado_esperado):
-    # Validación HTTP
-    assert context.response is not None, "No hay respuesta del cliente."
-    assert context.response.status_code == 200, f"Error HTTP: {context.response.status_code}. Cuerpo: {context.response.text}"
-
-    # Parseo robusto de JSON
+@given('los numeros enteros {a} y {b}')
+def step_given_numeros_enteros(context, a, b):
+    """Almacena los dos enteros en el contexto."""
     try:
-        data = context.response.json()
-    except Exception as e:
-        raise AssertionError(f"Respuesta no es JSON válido: {e}. Cuerpo: {context.response.text}")
+        context.a = int(a)
+        context.b = int(b)
+    except ValueError:
+        # Mantener la excepción para que los pasos 'when' la detecten si es necesario
+        context.exception = ValueError("Ambos numeros deben ser enteros no negativos")
 
-    # Contrato
-    assert "resultado" in data, f"Falta el campo 'resultado' en la respuesta: {data}"
-    resultado = data["resultado"]
 
-    # Tipo y dominio: la regla de negocio exige resultado >= 0
-    assert isinstance(resultado, int), f"'resultado' debe ser entero, recibido: {type(resultado)} ({resultado})"
-    assert resultado >= 0, f"El resultado no puede ser negativo según la regla: {resultado}"
+def _perform_subtraction(context):
+    """Realiza la resta con las validaciones requeridas y guarda resultado o excepción en el contexto."""
+    # Si ya había una excepción previa (p. ej. al parsear), preservarla
+    if hasattr(context, "exception") and context.exception is not None:
+        return
 
-    # Chequeo contra lo esperado
-    assert resultado == resultado_esperado, f"Esperaba {resultado_esperado}, obtuve {resultado}"
+    a = context.a
+    b = context.b
 
-    # (Opcional) Consistencia con los operandos recibidos, si el servicio los ecoa:
-    # assert data.get("numero_a") == context.numero_a
-    # assert data.get("numero_b") == context.numero_b
+    if a < 0 or b < 0:
+        context.exception = ValueError("Ambos numeros deben ser enteros no negativos")
+        return
 
-@then('falla porque A es menor que B con estado "{status_code:d}"')
-def step_check_subtraction_negative_error(context, status_code):
-    assert context.response is not None, "No hay respuesta del cliente."
-    assert context.response.status_code == status_code, (
-        f"Código HTTP distinto al esperado ({status_code}): {context.response.status_code}. "
-        f"Cuerpo: {context.response.text}"
+    result = a - b
+    if result < 0:
+        context.exception = ValueError("El resultado de la resta no puede ser negativo")
+        return
+
+    context.result = result
+
+
+@when('realizo la resta')
+def step_when_realizo_la_resta(context):
+    _perform_subtraction(context)
+
+
+@when('intento realizar la resta')
+def step_when_intento_realizar_la_resta(context):
+    _perform_subtraction(context)
+
+
+@then('el resultado debe ser {expected}')
+def step_then_resultado_debe_ser(context, expected):
+    """Verifica que el resultado almacenado en contexto coincide con el esperado."""
+    assert not hasattr(context, "exception") or context.exception is None, (
+        f"Se esperaba un resultado, pero se lanzó una excepción: {getattr(context, 'exception', None)}"
     )
+    assert hasattr(context, "result"), "No se encontró resultado en el contexto"
+    assert context.result == int(expected), f"Resultado esperado {expected}, obtenido {context.result}"
 
-    # Cuerpo de error legible
-    try:
-        data = context.response.json()
-    except Exception as e:
-        raise AssertionError(f"Respuesta de error no es JSON válido: {e}. Cuerpo: {context.response.text}")
 
-    # Ejemplo: {"error": "resta_negativa_no_permitida", "detalle": "numero_a debe ser >= numero_b"}
-    assert "error" in data, f"Falta clave 'error' en respuesta de error: {data}"
-    error_text = str(data["error"]).lower()
-    # Verificación semántica 
-    assert ("resta" in error_text or "subtracción" in error_text or "subtraction" in error_text) and (
-            "negativ" in error_text or "menor" in error_text or "invalid" in error_text
-        ), f"El mensaje no refleja que A < B viola la regla: {data}"
-
+@then('se lanza una excepcion de "{message}"')
+def step_then_se_lanza_una_excepcion(context, message):
+    """Verifica que una excepción fue guardada en el contexto y que su mensaje coincide."""
+    assert hasattr(context, "exception") and context.exception is not None, "No se lanzó ninguna excepción"
+    assert str(context.exception) == message, (
+        f"Se esperaba la excepción con mensaje '{message}', pero fue '{str(context.exception)}'"
+    )

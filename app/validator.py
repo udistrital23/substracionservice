@@ -1,37 +1,22 @@
-from typing import Tuple
+def restar(a, b):
+    """Resta segura de dos enteros no negativos.
 
+    Reglas:
+    - Ambos operandos deben ser enteros y >= 0.
+    - Si la resta resulta negativa se lanza una excepción con el mensaje esperado.
 
-def _validar_enteros_no_negativos(a, b) -> None:
-    """Valida que ambos valores sean enteros no negativos.
-
-    Lanza ValueError con el mensaje requerido cuando la validación falla.
+    Mensajes de excepción (para que los tests los chequen exactamente):
+    - "Ambos numeros deben ser enteros no negativos"
+    - "El resultado de la resta no puede ser negativo"
     """
-    # Verificar tipos (aceptar valores que se puedan interpretar como int)
-    if not isinstance(a, int) or not isinstance(b, int):
-        raise ValueError("Ambos numeros deben ser enteros no negativos")
-
-    # Verificar no negativos
+    # Validar tipos y dominio
+    if not (isinstance(a, int) and isinstance(b, int)):
+        raise Exception("Ambos numeros deben ser enteros no negativos")
     if a < 0 or b < 0:
-        raise ValueError("Ambos numeros deben ser enteros no negativos")
+        raise Exception("Ambos numeros deben ser enteros no negativos")
 
+    resultado = a - b
+    if resultado < 0:
+        raise Exception("El resultado de la resta no puede ser negativo")
 
-def suma_bases(numero_a: int, numero_b: int) -> int:
-    """Suma dos números en base 10 con validaciones.
-
-    Raise:
-        ValueError: Si alguno de los números no es un entero no negativo.
-
-    Returns:
-        int: Resultado de la suma en base 10.
-    """
-    _validar_enteros_no_negativos(numero_a, numero_b)
-    return numero_a + numero_b
-
-
-def sumar(a: int, b: int) -> int:
-    """Función auxiliar simple que realiza la suma.
-
-    Mantengo esta función para compatibilidad con tests que puedan
-    importar una función `sumar`.
-    """
-    return suma_bases(a, b)
+    return resultado

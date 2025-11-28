@@ -16,7 +16,7 @@ ENV PYTHONPATH=/app
 EXPOSE 8001
 
 # Arrancar uvicorn al iniciar el contenedor
-# CMD ["pytest", "-q"]
-CMD ["behave"]
+CMD ["pytest", "-q"]
+#CMD ["behave"]
 # CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8001"]
 

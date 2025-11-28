@@ -2,28 +2,28 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import Optional
 
-from app.validator import suma_bases
+from app.validator import restar
 
 
-class SumaRequest(BaseModel):
+class RestaRequest(BaseModel):
     numero_a: int
     numero_b: int
 
 
-class SumaResponse(BaseModel):
+class RestaResponse(BaseModel):
     resultado: int
 
 
 app = FastAPI(title="Base Converter Service")
 
 
-@app.post("/suma", response_model=SumaResponse)
-async def suma(req: SumaRequest):
+@app.post("/resta", response_model=RestaResponse)
+async def resta(req: RestaRequest):
     try:
-        resultado = suma_bases(
+        resultado = restar(
             req.numero_a,
             req.numero_b
         )
-        return SumaResponse(resultado=resultado)
+        return RestaResponse(resultado=resultado)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
